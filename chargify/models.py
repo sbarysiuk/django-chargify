@@ -160,7 +160,7 @@ class Customer(models.Model, ChargifyBaseModel):
         else:
             return ''
     def _set_reference(self, reference):
-        self._reference = str(reference)
+        self._reference = reference
     reference = property(_get_reference, _set_reference)
     
     def save(self, save_api = False, **kwargs):
@@ -224,11 +224,11 @@ class Customer(models.Model, ChargifyBaseModel):
         """ Load data into chargify api object """
         customer = self.gateway.Customer(node_name)
         customer.id = str(self.chargify_id)
-        customer.first_name = str(self.first_name)
-        customer.last_name = str(self.last_name)
-        customer.email = str(self.email)
-        customer.organization = str(self.organization)
-        customer.reference = str(self.reference)
+        customer.first_name = self.first_name
+        customer.last_name = self.last_name
+        customer.email = self.email
+        customer.organization = self.organization
+        customer.reference = self.reference
         return customer
     api = property(_api)
 
