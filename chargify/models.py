@@ -194,6 +194,8 @@ class Customer(models.Model, ChargifyBaseModel):
             customer = Customer()
         log.debug('Loading Customer API: %s' %(api))
         customer.chargify_id = int(api.id)
+        if api.reference:
+            customer._reference = api.reference
         try:
             if customer.user:
                 customer.first_name = api.first_name
@@ -606,4 +608,81 @@ class Subscription(models.Model, ChargifyBaseModel):
         if self.credit_card:
             subscription.credit_card = self.credit_card._api('credit_card_attributes')
         return subscription
+    api = property(_api)
+
+class TransactionManager(ChargifyBaseManager):
+    def _api(self):
+        return self.gateway.Transaction()
+    api = property(_api)
+
+    def reload_all(self):
+        for t in self.api.getAll():
+            try:
+                instance = self.get(chargify_id=t.id)
+                instance.load(t)
+            except Transaction.DoesNotExist:
+                self.model().load(t)
+
+
+class Transaction(models.Model, ChargifyBaseModel):
+    CHARGE = 'charge'
+    REFUND = 'refund'
+    PAYMENT = 'payment'
+    CREDIT = 'credit'
+    PAYMENT_AUTHORIZATION = 'payment_authorization'
+    INFO = 'info'
+    ADJUSTMENT = 'adjustment'
+    TRANSACTION_TYPE_CHOICES = (
+         (CHARGE, u'Charge'),
+         (REFUND, u'Refund'),
+         (PAYMENT, u'Payment'),
+         (CREDIT, u'Credit'),
+         (PAYMENT_AUTHORIZATION, u'Payment Authorization'),
+         (INFO, u'Suspended'),
+         (ADJUSTMENT, u'Cancelled'),
+         )
+
+    chargify_id = models.IntegerField(null=True, blank=True, unique=True)
+    transaction_type = models.CharField(max_length=15, null=True, blank=True, default='', choices=TRANSACTION_TYPE_CHOICES)
+    amount_in_cents = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(null=True, blank=True)
+    ending_balance_in_cents = models.IntegerField(null=True, blank=True)
+    memo = models.CharField(max_length=250, null=True, blank=False)
+    success = models.BooleanField(default=True)
+    product = models.ForeignKey(Product, null=True, related_name='transactions')
+    subscription = models.ForeignKey(Subscription, null=True, related_name='transactions')
+
+    objects = TransactionManager()
+
+    def load(self, api, commit=True):
+        self.chargify_id = int(api.id)
+        self.transaction_type = api.transaction_type
+        self.amount_in_cents = api.amount_in_cents
+        self.ending_balance_in_cents = api.ending_balance_in_cents
+        self.memo = api.memo
+        self.created_at = new_datetime(api.created_at)
+        self.success = api.success == 'true'
+        self.subscription, loaded = Subscription.objects.get_or_load(api.subscription_id)
+        self.product, loaded = Product.objects.get_or_load(api.product_id)
+        if commit:
+            self.save()
+        return self
+    
+    def update(self, commit = True):
+        """ Update customer data from chargify """
+        api = self.api.getById(self.chargify_id)
+        return self.load(api, commit = True)
+    
+    def _api(self, node_name = ''):
+        """ Load data into chargify api object """
+        product = self.gateway.Product(node_name)
+        product.id = str(self.chargify_id)
+        product.price_in_cents = self.price_in_cents
+        product.name = self.name
+        product.handle = self.handle
+        product.product_family = self.product_family
+        product.accounting_code = self.accounting_code
+        product.interval_unit = self.interval_unit
+        product.interval = self.interval
+        return product
     api = property(_api)

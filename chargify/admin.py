@@ -52,4 +52,15 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
 admin.site.register(Subscription, SubscriptionAdmin)
 
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = ['chargify_id', 'transaction_type', 'amount_in_cents', 'created_at', 'ending_balance_in_cents',
+                    'success', 'product', 'subscription']
+    ordering = ['created_at']
+    actions = [update, 'reload_all_transactions']
+    
+    def reload_all_transactions(self, request, queryset = None):
+        Transaction.objects.reload_all()
+
+admin.site.register(Transaction, TransactionAdmin)
+
 admin.site.register(CreditCard)

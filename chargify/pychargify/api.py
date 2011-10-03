@@ -355,7 +355,41 @@ class ChargifyBase(object):
     def _get_auth_string(self):
         return base64.encodestring('%s:%s' % (self.api_key, 'x'))[:-1]
 
+class ChargifyTransaction(ChargifyBase):
+    """
+    Represents Chargify Transaction
+    @license    GNU General Public License
+    """
 
+    __name__ = 'ChargifyTransaction'
+    __attribute_types__ = {
+        'subscription': 'ChargifySubscription',
+        'product': 'ChargifyProduct',
+    }
+    __xmlnodename__ = 'transaction'
+    
+    id = None
+    transaction_type = None
+    amount_in_cents = 0
+    created_at = None
+    ending_balance_in_cents = 0
+    memo = ''
+    success = None
+    subscription = None
+    product = None
+
+    def __init__(self, apikey, subdomain, nodename = ''):
+        super(ChargifyTransaction, self ).__init__(apikey, subdomain)
+        if nodename:
+            self.__xmlnodename__ = nodename
+        
+    def getAll(self):
+        return self._applyA(self._get('/transactions.xml'), self.__name__, 'transaction')
+
+    def getBySubscriptionId(self, subscription_id):
+        return self._applyA(self._get('/subscriptions/' + str(subscription_id) + '.xml'), self.__name__, 'transaction')
+        
+    
 class ChargifyCustomer(ChargifyBase):
     """
     Represents Chargify Customers
@@ -488,7 +522,10 @@ class ChargifySubscription(ChargifyBase):
         return self._applyA(self._get('/customers/' + customer_id + '/subscriptions.xml'), self.__name__, 'subscription')
     
     def getBySubscriptionId(self, subscription_id):
-        return self._applyA(self._get('/subscriptions/' + str(subscription_id) + '.xml'), self.__name__, 'subscription')
+        return self._applyS(self._get('/subscriptions/' + str(subscription_id) + '.xml'), self.__name__, 'subscription')
+
+    def getById(self, subscription_id):
+        return self.getBySubscriptionId(subscription_id)
 
     def save(self):
         return self._save('subscriptions', 'subscription')
@@ -610,6 +647,9 @@ class Chargify:
 
     def CreditCard(self, nodename = ''):
         return ChargifyCreditCard(self.api_key, self.sub_domain, nodename)
+
+    def Transaction(self, nodename = ''):
+        return ChargifyTransaction(self.api_key, self.sub_domain, nodename)
     
     def PostBack(self, postbackdata):
         return ChargifyPostBack(self.api_key, self.sub_domain, postbackdata)
