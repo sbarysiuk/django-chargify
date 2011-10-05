@@ -160,7 +160,7 @@ class ChargifyBase(object):
         for childnodes in node.childNodes:
             if childnodes.nodeType == 1 and not childnodes.nodeName == '':
                 if childnodes.nodeName in self.__attribute_types__:
-                    obj.__setattr__(childnodes.nodeName, self._applyS(childnodes.toxml(), self.__attribute_types__[childnodes.nodeName], childnodes.nodeName))
+                    obj.__setattr__(childnodes.nodeName, self._applyS(childnodes.toxml(encoding="utf-8"), self.__attribute_types__[childnodes.nodeName], childnodes.nodeName))
                 else:
                     node_value = self.__get_xml_value(childnodes.childNodes)
                     if "type" in  childnodes.attributes.keys():
@@ -171,22 +171,12 @@ class ChargifyBase(object):
                     obj.__setattr__(childnodes.nodeName, node_value)
         
         return obj
-
-    def fix_xml_encoding(self, xml):
-        """
-        Chargify encodes non-ascii characters in CP1252.
-        Decodes and re-encodes with xml characters.
-        Strips out whitespace "text nodes".
-        """
-        return unicode(''.join([i.strip() for i in xml.split('\n')])).encode(
-            'CP1252', 'replace').decode('utf-8', 'ignore').encode(
-            'ascii', 'xmlcharrefreplace')
     
     def _applyS(self, xml, obj_type, node_name):
         """
         Apply the values of the passed xml data to the a class
         """
-        dom = minidom.parseString(self.fix_xml_encoding(xml))
+        dom = minidom.parseString(xml)
         nodes = dom.getElementsByTagName(node_name)
         if nodes.length == 1:
             return self.__get_object_from_node(nodes[0], obj_type)
@@ -195,7 +185,7 @@ class ChargifyBase(object):
         """
         Apply the values of the passed data to a new class of the current type
         """
-        dom = minidom.parseString(self.fix_xml_encoding(xml))
+        dom = minidom.parseString(xml)
         nodes = dom.getElementsByTagName(node_name)
         objs = []
         for node in nodes:
@@ -213,7 +203,7 @@ class ChargifyBase(object):
                     element.appendChild(value._toxml(dom))
                 else:
                     node = minidom.Element(property)
-                    node_txt = dom.createTextNode(self.fix_xml_encoding(unicode(value)))
+                    node_txt = dom.createTextNode(unicode(value))
                     node.appendChild(node_txt)
                     element.appendChild(node)
         return element
