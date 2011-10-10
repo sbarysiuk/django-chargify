@@ -207,7 +207,9 @@ class Customer(models.Model, ChargifyBaseModel):
             try:
                 user = User.objects.get(email=api.email)
             except:
-                user = User(first_name = api.first_name, last_name = api.last_name, email = api.email, username = api.email)
+                # create inactive user when loading from Chargify
+                user = User(first_name = api.first_name, last_name = api.last_name, 
+                            email = api.email, username = api.email, is_active = False)
                 user.save()
             customer.user = user
         customer.organization = api.organization
