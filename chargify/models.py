@@ -466,6 +466,7 @@ class Subscription(models.Model, ChargifyBaseModel):
     SUSPENDED = 'suspended'
     CANCELLED = 'canceled'
     EXPIRED = 'expired'
+    UNPAID = 'unpaid'
     STATE_CHOICES = (
          (TRIALING, u'Trialing'),
          (ASSESSING, u'Assessing'),
@@ -475,6 +476,7 @@ class Subscription(models.Model, ChargifyBaseModel):
          (SUSPENDED, u'Suspended'),
          (CANCELLED, u'Cancelled'),
          (EXPIRED, u'Expired'),
+         (UNPAID, u'Unpaid'),
          )
     chargify_id = models.IntegerField(null=True, blank=True, unique=True)
     state = models.CharField(max_length=15, null=True, blank=True, default='', choices=STATE_CHOICES)
