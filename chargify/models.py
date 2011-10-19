@@ -493,6 +493,7 @@ class Subscription(models.Model, ChargifyBaseModel):
     product = models.ForeignKey(Product, null=True)
     credit_card = models.OneToOneField(CreditCard, related_name='subscription', null=True, blank=True)
     active = models.BooleanField(default=True)
+    next_billing_at = models.DateTimeField(null=True, blank=True)
     objects = SubscriptionManager()
     
     def __unicode__(self):
