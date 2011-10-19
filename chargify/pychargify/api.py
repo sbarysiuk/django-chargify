@@ -377,7 +377,7 @@ class ChargifyTransaction(ChargifyBase):
         return self._applyA(self._get('/transactions.xml'), self.__name__, 'transaction')
 
     def getBySubscriptionId(self, subscription_id):
-        return self._applyA(self._get('/subscriptions/' + str(subscription_id) + '.xml'), self.__name__, 'transaction')
+        return self._applyA(self._get('/subscriptions/' + str(subscription_id) + '/transactions.xml'), self.__name__, 'transaction')
         
     
 class ChargifyCustomer(ChargifyBase):
