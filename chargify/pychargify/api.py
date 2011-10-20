@@ -23,6 +23,7 @@ import base64
 import time
 import datetime
 import iso8601
+import re
 
 try:
     import json
@@ -266,6 +267,9 @@ class ChargifyBase(object):
         """
         return self._request('DELETE', url, data)
     
+    def _remove_cc_info(self, data):
+        return re.sub('<full_number>(\d+)</full_number>', data, '<full_number>XXXX</full_number>')
+        
     def _request(self, method, url, data = '' ):
         """
         Handled the request and sends it to the server
@@ -281,15 +285,16 @@ class ChargifyBase(object):
         http.putheader("Content-Length", str(len(data)))
         http.putheader("Content-Type", 'text/xml; charset="UTF-8"')
         http.endheaders()
+        log.info('request method[%s], url[%s], data[%s]' % (method, url, self._remove_cc_info(data)))
 
         http.send(data)
         response = http.getresponse()
         val = ''
         try:
             val = response.read()
-            log.log(5, "Server Response: %s" %(val))
-        except:
-            pass
+            log.info("response status[%s], data[%s]" % (response.status, val))
+        except Exception, e:
+            log.exception('Unable to read response.')
         
         # Unauthorized Error
         if response.status == 401:
@@ -494,6 +499,7 @@ class ChargifySubscription(ChargifyBase):
     current_period_ends_at = None
     trial_started_at = None
     trial_ended_at = None
+    next_assessment_at = None
     activated_at = None
     expires_at = None
     created_at = None

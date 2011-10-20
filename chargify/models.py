@@ -8,6 +8,8 @@ import logging
 import time
 import traceback
 from django.conf import settings
+from datetime import datetime, timedelta
+
 log = logging.getLogger("chargify")
 #logging.basicConfig(level=logging.DEBUG)
 
@@ -560,6 +562,12 @@ class Subscription(models.Model, ChargifyBaseModel):
             self.expires_at = new_datetime(api.expires_at)
         else:
             self.expires_at = None
+        if api.next_assessment_at:
+            self.next_billing_at = new_datetime(api.next_assessment_at)
+        elif api.next_billing_at:
+            self.next_billing_at = new_datetime(api.next_billing_at)
+        else:
+            self.next_billing_at = None
         self.created_at = new_datetime(api.created_at)
         self.updated_at = new_datetime(api.updated_at)
         try:
@@ -594,6 +602,13 @@ class Subscription(models.Model, ChargifyBaseModel):
     def upgrade(self, product):
         """ Upgrade / Downgrade products """
         return self.update(self.api.upgrade(product.handle))
+
+    def renew(self):
+        self.next_billing_at = datetime.now() + timedelta(minutes=10)
+        self._next_billing_at_changed = True
+        saved, subscription = self.api.save()
+        if saved:
+            return self.load(subscription, commit=True)
     
     def _api(self, node_name = ''):
         """ Load data into chargify api object """
@@ -608,6 +623,9 @@ class Subscription(models.Model, ChargifyBaseModel):
             subscription.customer = self.customer._api('customer_id')
         if self.credit_card:
             subscription.credit_card = self.credit_card._api('credit_card_attributes')
+        if getattr(self, '_next_billing_at_changed', False):
+            subscription.next_billing_at = self.next_billing_at
+
         return subscription
     api = property(_api)
 
