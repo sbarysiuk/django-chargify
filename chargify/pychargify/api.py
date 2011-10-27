@@ -24,6 +24,7 @@ import time
 import datetime
 import iso8601
 import re
+import urllib
 
 try:
     import json
@@ -415,7 +416,7 @@ class ChargifyCustomer(ChargifyBase):
         return self._applyS(self._get('/customers/' + str(id) + '.xml'), self.__name__, 'customer')
     
     def getByReference(self, reference):
-        return self._applyS(self._get('/customers/lookup' + '.xml' + str(reference)), self.__name__, 'customer')
+        return self._applyS(self._get('/customers/lookup' + '.xml?reference=' + urllib.quote(reference)), self.__name__, 'customer')
     
     def getSubscriptions(self):
         obj = ChargifySubscription(self.api_key, self.sub_domain)
