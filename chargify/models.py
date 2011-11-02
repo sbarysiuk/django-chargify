@@ -599,9 +599,11 @@ class Subscription(models.Model, ChargifyBaseModel):
         subscription = self.gateway.Subscription().getBySubscriptionId(self.chargify_id)        
         return self.load(subscription, commit)
     
-    def upgrade(self, product):
+    def upgrade(self, product, include_trial=1, include_initial_charge=0):
         """ Upgrade / Downgrade products """
-        return self.update(self.api.upgrade(product.handle))
+        return self.update(self.api.upgrade(product.handle,
+                                            include_trial=include_trial, 
+                                            include_initial_charge=include_initial_charge))
 
     def renew(self):
         self.next_billing_at = datetime.now() + timedelta(minutes=10)
