@@ -534,14 +534,18 @@ class ChargifySubscription(ChargifyBase):
     def reactivate(self):
         self._put("/subscriptions/"+self.id+"/reactivate.xml", "")
 
-    def upgrade(self, toProductHandle):
+    def upgrade(self, toProductHandle, include_trial=1, include_initial_charge=0):
+        """ Does real migration. """
+
         xml = """<?xml version="1.0" encoding="UTF-8"?>
-  <subscription>
-    <product_handle>%s</product_handle>
-  </subscription>""" % (toProductHandle)
+        <migration>
+            <product_handle>%s</product_handle>
+            <include_trial>%s</include_trial>
+            <include_initial_charge>%s</include_initial_charge>
+        </migration>""" % (toProductHandle, include_trial, include_initial_charge)
         #end improper indentation
         
-        return self._applyS(self._put("/subscriptions/"+self.id+".xml", xml), self.__name__, "subscription")
+        return self._applyS(self._post("/subscriptions/"+self.id+"/migrations.xml", xml), self.__name__, "subscription")
     
     def unsubscribe(self, message):
         xml = """<?xml version="1.0" encoding="UTF-8"?>
