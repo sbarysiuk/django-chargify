@@ -378,6 +378,9 @@ class ChargifyTransaction(ChargifyBase):
         super(ChargifyTransaction, self ).__init__(apikey, subdomain)
         if nodename:
             self.__xmlnodename__ = nodename
+
+    def getById(self, id):
+        return self._applyS(self._get('/transactions/' + str(id) + '.xml'), self.__name__, 'transaction')
         
     def getAll(self):
         return self._applyA(self._get('/transactions.xml'), self.__name__, 'transaction')
