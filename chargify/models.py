@@ -606,11 +606,15 @@ class Subscription(models.Model, ChargifyBaseModel):
                                             include_initial_charge=include_initial_charge))
 
     def renew(self):
-        self.next_billing_at = datetime.now() + timedelta(minutes=10)
+        self.next_billing_at = datetime.now() + timedelta(minutes=3)
         self._next_billing_at_changed = True
         saved, subscription = self.api.save()
         if saved:
-            return self.load(subscription, commit=True)
+            subs_loaded = self.load(subscription, commit=True)
+            if subs_loaded.current_period_started_at < self.next_billing_at:
+                subs_loaded.current_period_started_at = self.next_billing_at
+                subs_loaded.save()
+                return subs_loaded
     
     def _api(self, node_name = ''):
         """ Load data into chargify api object """
