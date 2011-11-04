@@ -286,14 +286,14 @@ class ChargifyBase(object):
         http.putheader("Content-Length", str(len(data)))
         http.putheader("Content-Type", 'text/xml; charset="UTF-8"')
         http.endheaders()
-        log.info('request method[%s], url[%s], data[%s]' % (method, url, self._remove_cc_info(data)))
+        log.log(100, 'request method[%s], url[%s], data[%s]' % (method, url, self._remove_cc_info(data)))
 
         http.send(data)
         response = http.getresponse()
         val = ''
         try:
             val = response.read()
-            log.info("response status[%s], data[%s]" % (response.status, val))
+            log.log(100, "response status[%s], data[%s]" % (response.status, val))
         except Exception, e:
             log.exception('Unable to read response.')
         
