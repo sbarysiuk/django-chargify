@@ -269,7 +269,7 @@ class ChargifyBase(object):
         return self._request('DELETE', url, data)
     
     def _remove_cc_info(self, data):
-        return re.sub('<full_number>(\d+)</full_number>', data, '<full_number>XXXX</full_number>')
+        return re.sub('<full_number>(\d+)</full_number>', '<full_number>XXXX</full_number>', data)
         
     def _request(self, method, url, data = '' ):
         """
