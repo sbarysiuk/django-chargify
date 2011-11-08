@@ -535,7 +535,7 @@ class ChargifySubscription(ChargifyBase):
         self._put("/subscriptions/"+self.id+"/reset_balance.xml", "")
     
     def reactivate(self):
-        self._put("/subscriptions/"+self.id+"/reactivate.xml", "")
+        return self._applyS(self._put("/subscriptions/"+self.id+"/reactivate.xml", ""), self.__name__, "subscription")
 
     def upgrade(self, toProductHandle, include_trial=1, include_initial_charge=0):
         """ Does real migration. """
@@ -550,7 +550,7 @@ class ChargifySubscription(ChargifyBase):
         
         return self._applyS(self._post("/subscriptions/"+self.id+"/migrations.xml", xml), self.__name__, "subscription")
     
-    def unsubscribe(self, message):
+    def unsubscribe(self, message=""):
         xml = """<?xml version="1.0" encoding="UTF-8"?>
 <subscription>
   <cancellation_message>
@@ -558,7 +558,7 @@ class ChargifySubscription(ChargifyBase):
   </cancellation_message>
 </subscription>""" % (message)
         
-        self._delete("/subscriptions/"+self.id+".xml", xml)
+        return self._applyS(self._delete("/subscriptions/"+self.id+".xml", xml), self.__name__, "subscription")
 
 
 class ChargifyCreditCard(ChargifyBase):

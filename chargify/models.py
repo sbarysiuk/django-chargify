@@ -604,6 +604,19 @@ class Subscription(models.Model, ChargifyBaseModel):
         return self.update(self.api.upgrade(product.handle,
                                             include_trial=include_trial, 
                                             include_initial_charge=include_initial_charge))
+    def reactivate(self):
+        """ Reactivates already canceleed subscription. """
+        instance =  self.update(self.api.reactivate())
+        instance.active = True
+        instance.save()
+        return instance
+
+    def unsubscribe(self, message=""):
+        """ Cancels the subscription. """
+        instance = self.update(self.api.unsubscribe(message=message))
+        instance.active = False
+        instance.save()
+        return instance
 
     def renew(self):
         """ Renews the subscription by setting next_billing_at +20 minutes in a future. """
