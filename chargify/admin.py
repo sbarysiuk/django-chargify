@@ -22,10 +22,19 @@ def reload_all(modeladmin, request, queryset, model):
     messages.success(request, 'All chargify objects reloaded')
 reload_all.short_description = "Reload all from Chargify"
 
+class SubscriptionInline(admin.TabularInline):
+    model = Subscription
+    raw_id_fields = ('credit_card',)
+    extra = 0
+
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ['last_name', 'first_name', 'email', 'reference', 'active']
+    list_display = ['chargify_id', 'last_name', 'first_name', 'email', 'reference', 'active', 'organization']
     ordering = ['_last_name', '_first_name']
+    raw_id_fields = ('user',)
+    search_fields = ('_reference', 'chargify_id', 'organization')
+    list_filter = ('active', 'chargify_created_at', 'chargify_updated_at')
     actions = [update, 'reload_all_customers']
+    inlines = [SubscriptionInline]
     
     def reload_all_customers(self, request, queryset = None):
         return reload_all(self, request, queryset, Customer)
@@ -43,7 +52,10 @@ class ProductAdmin(admin.ModelAdmin):
 admin.site.register(Product, ProductAdmin)
 
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ['customer', 'product', 'chargify_id', 'balance', 'current_period_started_at', 'trial_started_at', 'active']
+    list_display = ('chargify_id', 'customer', 'state', 'product', 'balance', 'current_period_started_at', 'trial_started_at', 'active', 'next_billing_at')
+    raw_id_fields = ('customer', 'credit_card')
+    search_fields = ('chargify_id', 'customer___reference')
+    list_filter = ('active', 'state', 'current_period_started_at', 'next_billing_at')
     ordering = ['customer']
     actions = [update, 'reload_all_subscriptions']
     
