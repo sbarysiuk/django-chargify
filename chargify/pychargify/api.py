@@ -351,6 +351,34 @@ class ChargifyBase(object):
     def _get_auth_string(self):
         return base64.encodestring('%s:%s' % (self.api_key, 'x'))[:-1]
 
+class ChargifyCoupon(ChargifyBase):
+    __name__ = 'ChargifyCoupon'
+    __attribute_types__ = {}
+    __xmlnodename__ = 'coupon'
+    id = None
+    name = ''
+    code = ''
+    percentage = 0
+    amount = 0
+    allow_negative_balance = False
+    recurring = True
+    coupon_end_date = None
+
+    def __init__(self, apikey, subdomain, nodename = ''):
+        super(ChargifyCoupon, self ).__init__(apikey, subdomain)
+        if nodename:
+            self.__xmlnodename__ = nodename
+
+    def getById(self, id):
+        return self._applyS(self._get('/coupons/' + str(id) + '.xml'), self.__name__, 'coupon')
+
+    def find(self, code):
+        return self._applyS(self._get('/coupons/find.xml?code=' + str(code)), self.__name__, 'coupon')
+
+    def save(self):
+        return self._save('coupons', 'coupon')
+
+
 class ChargifyTransaction(ChargifyBase):
     """
     Represents Chargify Transaction
@@ -530,6 +558,9 @@ class ChargifySubscription(ChargifyBase):
 
     def save(self):
         return self._save('subscriptions', 'subscription')
+
+    def add_coupon(self, code):
+        self._post("/subscriptions/"+self.id+"/add_coupon.xml?code="+str(code), "")
     
     def resetBalance(self):
         self._put("/subscriptions/"+self.id+"/reset_balance.xml", "")
@@ -658,3 +689,6 @@ class Chargify:
     
     def PostBack(self, postbackdata):
         return ChargifyPostBack(self.api_key, self.sub_domain, postbackdata)
+
+    def Coupon(self, nodename = ''):
+        return ChargifyCoupon(self.api_key, self.sub_domain, nodename)

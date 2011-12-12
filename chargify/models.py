@@ -433,6 +433,69 @@ class CreditCard(models.Model, ChargifyBaseModel):
         return cc
     api = property(_api)
 
+
+class CouponManager(ChargifyBaseManager):
+    def _api(self):
+        return self.gateway.Coupon()
+    api = property(_api)
+
+    def find(self, code):
+        """ Finds and loads a Coupon """
+        try:
+            return self.filter(code=code)[0]
+        except IndexError:
+            return self.model().load(
+                self.api.find(code))
+
+
+class Coupon(models.Model, ChargifyBaseModel):
+    chargify_id = models.IntegerField(null=True, blank=True, unique=True)
+    code = models.CharField(max_length=100, null=True, blank=True)
+    name = models.CharField(max_length=100, null=True, blank=True)
+    percentage = models.IntegerField(null=True, blank=True)
+    amount = models.DecimalField(decimal_places = 2, max_digits = 15, default=Decimal('0.00'))
+    allow_negative_balance = models.BooleanField(default=False)
+    recurring = models.BooleanField(default=True)
+    coupon_end_date = models.DateTimeField(null=True, blank=True)
+
+    objects = CouponManager()
+
+    def load(self, api, commit=True):
+        self.chargify_id = int(api.id)
+        self.code = api.code
+        self.name = api.name
+        if api.percentage:
+            self.percentage = api.percentage
+        if api.amount:
+            self.amount = api.amount
+        if api.coupon_end_date:
+            self.coupon_end_date = new_datetime(api.coupon_end_date)
+        self.allow_negative_balance = api.allow_negative_balance
+        self.recurring = api.recurring
+        if commit:
+            self.save()
+        return self
+    
+    def update(self, commit = True):
+        """ Update customer data from chargify """
+        api = self.api.getById(self.chargify_id)
+        return self.load(api, commit = True)
+    
+    def _api(self, node_name = ''):
+        """ Load data into chargify api object """
+        instance = self.gateway.Coupon(node_name)
+        instance.id = str(self.chargify_id)        
+        instance.name = self.name
+        instance.code = self.code
+        instance.percentage = self.percentage
+        instance.allow_negative_balance = self.allow_negative_balance
+        instance.coupon_end_date = self.coupon_end_date
+        instance.recurring = self.recurring
+        instance.amount = self.amount
+        return instance
+
+    api = property(_api)
+
 class SubscriptionManager(ChargifyBaseManager):
     def _api(self):
         return self.gateway.Subscription()
@@ -496,6 +559,7 @@ class Subscription(models.Model, ChargifyBaseModel):
     credit_card = models.OneToOneField(CreditCard, related_name='subscription', null=True, blank=True)
     active = models.BooleanField(default=True)
     next_billing_at = models.DateTimeField(null=True, blank=True)
+    coupons = models.ManyToManyField(Coupon, related_name='subscriptions', blank=True)
     objects = SubscriptionManager()
     
     def __unicode__(self):
@@ -611,6 +675,10 @@ class Subscription(models.Model, ChargifyBaseModel):
         instance.save()
         return instance
 
+    def add_coupon(self, coupon):
+        self.api.add_coupon(coupon.code)
+        self.coupons.add(coupon)
+
     def unsubscribe(self, message=""):
         """ Cancels the subscription. """
         instance = self.update(self.api.unsubscribe(message=message))
@@ -722,3 +790,4 @@ class Transaction(models.Model, ChargifyBaseModel):
         product.interval = self.interval
         return product
     api = property(_api)
+
