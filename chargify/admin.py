@@ -53,7 +53,7 @@ admin.site.register(Product, ProductAdmin)
 
 class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ('chargify_id', 'customer', 'state', 'product', 'balance', 'current_period_started_at', 'trial_started_at', 'active', 'next_billing_at')
-    raw_id_fields = ('customer', 'credit_card')
+    raw_id_fields = ('customer', 'credit_card', 'coupons')
     search_fields = ('chargify_id', 'customer___reference')
     list_filter = ('active', 'state', 'current_period_started_at', 'next_billing_at')
     ordering = ['customer']
@@ -75,4 +75,9 @@ class TransactionAdmin(admin.ModelAdmin):
 
 admin.site.register(Transaction, TransactionAdmin)
 
+class CouponAdmin(admin.ModelAdmin):
+    list_display = ['chargify_id', 'code', 'name', 'amount', 'recurring', 'percentage']
+    search_fields = ('chargify_id', 'code', 'name')
+
 admin.site.register(CreditCard)
+admin.site.register(Coupon, CouponAdmin)

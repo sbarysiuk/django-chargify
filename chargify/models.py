@@ -459,6 +459,13 @@ class Coupon(models.Model, ChargifyBaseModel):
     coupon_end_date = models.DateTimeField(null=True, blank=True)
 
     objects = CouponManager()
+    
+    def _amount_in_cents(self):
+        return self._in_cents(self.amount)
+
+    def _set_amount_in_cents(self, amount):
+        self.amount = self._from_cents(amount)
+    amount_in_cents = property(_amount_in_cents, _set_amount_in_cents)
 
     def load(self, api, commit=True):
         self.chargify_id = int(api.id)
@@ -466,8 +473,8 @@ class Coupon(models.Model, ChargifyBaseModel):
         self.name = api.name
         if api.percentage:
             self.percentage = api.percentage
-        if api.amount:
-            self.amount = api.amount
+        if api.amount_in_cents:
+            self.amount_in_cents = api.amount_in_cents
         if api.coupon_end_date:
             self.coupon_end_date = new_datetime(api.coupon_end_date)
         self.allow_negative_balance = api.allow_negative_balance
@@ -491,7 +498,7 @@ class Coupon(models.Model, ChargifyBaseModel):
         instance.allow_negative_balance = self.allow_negative_balance
         instance.coupon_end_date = self.coupon_end_date
         instance.recurring = self.recurring
-        instance.amount = self.amount
+        instance.amount_in_cents = self.amount_in_cents
         return instance
 
     api = property(_api)

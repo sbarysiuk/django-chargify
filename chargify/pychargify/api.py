@@ -359,7 +359,7 @@ class ChargifyCoupon(ChargifyBase):
     name = ''
     code = ''
     percentage = 0
-    amount = 0
+    amount_in_cents = 0
     allow_negative_balance = False
     recurring = True
     coupon_end_date = None
