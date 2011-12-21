@@ -608,8 +608,10 @@ class Subscription(models.Model, ChargifyBaseModel):
             log.debug('Saving API')
             saved, subscription = api.save()
             if saved:
-                return self.load(subscription, commit=True) # object save happens after load
-        return super(Subscription, self).save(*args, **kwargs)
+                self.load(subscription, commit=False)
+
+        super(Subscription, self).save(*args, **kwargs)
+        return self
     
     def load(self, api, commit=True):
         self.chargify_id = int(api.id)
