@@ -469,6 +469,10 @@ class Coupon(models.Model, ChargifyBaseModel):
 
     def load(self, api, commit=True):
         self.chargify_id = int(api.id)
+        try:
+            self = Coupon.objects.get(chargify_id=self.chargify_id)
+        except Coupon.DoesNotExist:
+            pass
         self.code = api.code
         self.name = api.name
         if api.percentage:
