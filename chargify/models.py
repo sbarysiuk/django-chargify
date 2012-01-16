@@ -790,15 +790,15 @@ class Transaction(models.Model, ChargifyBaseModel):
     
     def _api(self, node_name = ''):
         """ Load data into chargify api object """
-        product = self.gateway.Product(node_name)
-        product.id = str(self.chargify_id)
-        product.price_in_cents = self.price_in_cents
-        product.name = self.name
-        product.handle = self.handle
-        product.product_family = self.product_family
-        product.accounting_code = self.accounting_code
-        product.interval_unit = self.interval_unit
-        product.interval = self.interval
-        return product
+        instance = self.gateway.Transaction(node_name)
+        instance.id = str(self.chargify_id)
+        instance.amount_in_cents = self.amount_in_cents
+        instance.ending_balance_in_cents = self.ending_balance_in_cents
+        instance.memo = self.memo
+        instance.created_at = self.created_at
+        instance.success = self.success
+        instance.product = self.product.api
+        instance.subscription = self.subscription.api
+        return instance
     api = property(_api)
 
