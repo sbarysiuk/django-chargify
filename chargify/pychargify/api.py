@@ -275,7 +275,6 @@ class ChargifyBase(object):
         """
         Handled the request and sends it to the server
         """
-        log.log(5, "Sending XML: %s" %(data))
         http = httplib.HTTPSConnection(self.request_host)
         
         http.putrequest(method, url)
@@ -286,14 +285,12 @@ class ChargifyBase(object):
         http.putheader("Content-Length", str(len(data)))
         http.putheader("Content-Type", 'text/xml; charset="UTF-8"')
         http.endheaders()
-        log.log(100, 'request method[%s], url[%s], data[%s]' % (method, url, self._remove_cc_info(data)))
 
         http.send(data)
         response = http.getresponse()
         val = ''
         try:
             val = response.read()
-            log.log(100, "response status[%s], data[%s]" % (response.status, val))
         except Exception, e:
             log.exception('Unable to read response.')
         
