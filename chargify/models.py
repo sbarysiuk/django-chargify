@@ -697,9 +697,9 @@ class Subscription(models.Model, ChargifyBaseModel):
         instance.save()
         return instance
 
-    def renew(self):
-        """ Renews the subscription by setting next_billing_at +20 minutes in a future. """
-        self.next_billing_at = datetime.now() + timedelta(minutes=20)
+    def renew(self, target_datetime):
+        """ Renews the subscription by setting next_billing_at to the given 'target_datetime'. """
+        self.next_billing_at = target_datetime
         self._next_billing_at_changed = True
         saved, subscription = self.api.save()
         if saved:
