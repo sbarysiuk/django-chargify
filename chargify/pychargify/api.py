@@ -160,9 +160,10 @@ class ChargifyBase(object):
         obj = constructor(self.api_key, self.sub_domain)
         
         for childnodes in node.childNodes:
-            if childnodes.nodeType == 1 and not childnodes.nodeName == '':
-                if childnodes.nodeName in self.__attribute_types__:
-                    obj.__setattr__(childnodes.nodeName, self._applyS(childnodes.toxml(encoding="utf-8"), self.__attribute_types__[childnodes.nodeName], childnodes.nodeName))
+            node_name = childnodes.nodeName.replace('-', '_')
+            if childnodes.nodeType == 1 and not node_name == '':
+                if node_name in self.__attribute_types__:
+                    obj.__setattr__(node_name, self._applyS(childnodes.toxml(encoding="utf-8"), self.__attribute_types__[node_name], node_name))
                 else:
                     node_value = self.__get_xml_value(childnodes.childNodes)
                     if "type" in  childnodes.attributes.keys():
@@ -170,7 +171,9 @@ class ChargifyBase(object):
                         if node_value:
                             if node_type.nodeValue == 'datetime':
                                 node_value = datetime.datetime.fromtimestamp(iso8601.parse(node_value))
-                    obj.__setattr__(childnodes.nodeName, node_value)
+                    obj.__setattr__(node_name, node_value)
+#        log.log(100, '__get_object_from_node111: obj[%s]' % obj)
+#        log.log(100, '__get_object_from_node111: obj[%s]' % dir(obj))
         
         return obj
     
@@ -180,8 +183,11 @@ class ChargifyBase(object):
         """
         dom = minidom.parseString(xml)
         nodes = dom.getElementsByTagName(node_name)
+        log.log(100, '_applyS: nodes [%s]' % nodes)
         if nodes.length == 1:
             return self.__get_object_from_node(nodes[0], obj_type)
+        
+        log.log(100, '_applyS: nodes.length = %s' % nodes.length)
         
     def _applyA(self, xml, obj_type, node_name):
         """
@@ -275,6 +281,7 @@ class ChargifyBase(object):
         """
         Handled the request and sends it to the server
         """
+        log.log(5, "Sending XML: %s" %(data))
         http = httplib.HTTPSConnection(self.request_host)
         
         http.putrequest(method, url)
@@ -285,12 +292,14 @@ class ChargifyBase(object):
         http.putheader("Content-Length", str(len(data)))
         http.putheader("Content-Type", 'text/xml; charset="UTF-8"')
         http.endheaders()
+        log.log(100, 'request method[%s], url[%s], data[%s]' % (method, url, self._remove_cc_info(data)))
 
         http.send(data)
         response = http.getresponse()
         val = ''
         try:
             val = response.read()
+            log.log(100, "response status[%s], data[%s]" % (response.status, val))
         except Exception, e:
             log.exception('Unable to read response.')
         
