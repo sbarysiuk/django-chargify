@@ -172,8 +172,8 @@ class ChargifyBase(object):
                             if node_type.nodeValue == 'datetime':
                                 node_value = datetime.datetime.fromtimestamp(iso8601.parse(node_value))
                     obj.__setattr__(node_name, node_value)
-#        log.log(100, '__get_object_from_node111: obj[%s]' % obj)
-#        log.log(100, '__get_object_from_node111: obj[%s]' % dir(obj))
+        log.log(100, '__get_object_from_node: obj[%s]' % obj)
+        #log.log(100, '__get_object_from_node: obj[%s]' % dir(obj))
         
         return obj
     
@@ -183,11 +183,11 @@ class ChargifyBase(object):
         """
         dom = minidom.parseString(xml)
         nodes = dom.getElementsByTagName(node_name)
-#        log.log(100, '_applyS: nodes [%s]' % nodes)
+        log.log(100, '_applyS: nodes [%s]' % nodes)
         if nodes.length == 1:
             return self.__get_object_from_node(nodes[0], obj_type)
         
-#        log.log(100, '_applyS: nodes.length = %s' % nodes.length)
+        log.log(100, '_applyS: nodes.length = %s' % nodes.length)
         
     def _applyA(self, xml, obj_type, node_name):
         """
@@ -281,7 +281,7 @@ class ChargifyBase(object):
         """
         Handled the request and sends it to the server
         """
-#        log.log(5, "Sending XML: %s" %(data))
+        log.log(5, "_request: Sending XML: %s" % (data))
         http = httplib.HTTPSConnection(self.request_host)
         
         http.putrequest(method, url)
@@ -292,16 +292,16 @@ class ChargifyBase(object):
         http.putheader("Content-Length", str(len(data)))
         http.putheader("Content-Type", 'text/xml; charset="UTF-8"')
         http.endheaders()
-#        log.log(100, 'request method[%s], url[%s], data[%s]' % (method, url, self._remove_cc_info(data)))
+        log.log(100, '_request: method[%s], url[%s], data[%s]' % (method, url, self._remove_cc_info(data)))
 
         http.send(data)
         response = http.getresponse()
         val = ''
         try:
             val = response.read()
-#            log.log(100, "response status[%s], data[%s]" % (response.status, val))
+            log.log(100, "_request: response status[%s], content[%s]" % (response.status, val))
         except Exception, e:
-            log.exception('Unable to read response.')
+            log.exception('_request: Unable to read response.')
         
         # Unauthorized Error
         if response.status == 401:
