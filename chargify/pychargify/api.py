@@ -61,7 +61,7 @@ class ChargifyError(Exception):
 
     def __str__(self):
         return repr(self.errors)
-    
+
     def _get_node_text(self, node):
         s = ''
         if node.nodeType == node.TEXT_NODE:
@@ -82,7 +82,7 @@ class ChargifyError(Exception):
                 if val.strip():
                     errors.append(val)
         return errors
-    
+
 
 class ChargifyUnAuthorized(ChargifyError):
     """
@@ -125,12 +125,12 @@ class ChargifyBase(object):
     @license    GNU General Public License
     """
     __ignore__ = ['api_key', 'sub_domain', 'base_host', 'request_host', 'id', '__xmlnodename__']
-    
+
     api_key = ''
     sub_domain = ''
     base_host = '.chargify.com'
     request_host = ''
-    
+
     def __init__(self, apikey, subdomain):
         """
         Initialize the Class with the API Key and SubDomain for Requests to the Chargify API
@@ -138,7 +138,7 @@ class ChargifyBase(object):
         self.api_key = apikey
         self.sub_domain = subdomain
         self.request_host = self.sub_domain + self.base_host
-    
+
     def __get_xml_value(self, nodelist):
         """
         Get the Text Value from an XML Node
@@ -148,7 +148,7 @@ class ChargifyBase(object):
             if node.nodeType == node.TEXT_NODE:
                 rc = rc + node.data
         return rc
-    
+
     def __get_object_from_node(self, node, obj_type = ''):
         """
         Copy values from a node into a new Object
@@ -158,7 +158,7 @@ class ChargifyBase(object):
         else:
             constructor = globals()[obj_type]
         obj = constructor(self.api_key, self.sub_domain)
-        
+
         for childnodes in node.childNodes:
             node_name = childnodes.nodeName.replace('-', '_')
             if childnodes.nodeType == 1 and not node_name == '':
@@ -174,9 +174,9 @@ class ChargifyBase(object):
                     obj.__setattr__(node_name, node_value)
         log.log(100, '__get_object_from_node: obj[%s]' % obj)
         #log.log(100, '__get_object_from_node: obj[%s]' % dir(obj))
-        
+
         return obj
-    
+
     def _applyS(self, xml, obj_type, node_name):
         """
         Apply the values of the passed xml data to the a class
@@ -186,9 +186,9 @@ class ChargifyBase(object):
         log.log(100, '_applyS: nodes [%s]' % nodes)
         if nodes.length == 1:
             return self.__get_object_from_node(nodes[0], obj_type)
-        
+
         log.log(100, '_applyS: nodes.length = %s' % nodes.length)
-        
+
     def _applyA(self, xml, obj_type, node_name):
         """
         Apply the values of the passed data to a new class of the current type
@@ -199,7 +199,21 @@ class ChargifyBase(object):
         for node in nodes:
             objs.append(self.__get_object_from_node(node, obj_type))
         return objs
-    
+
+    def _dicttoxml(self, item, element, dom):
+        for key, value in item.iteritems():
+            node = minidom.Element(key)
+            if isinstance(value, dict):
+                self._dicttoxml(value, node, dom)
+            else:
+                node.appendChild(dom.createTextNode(unicode(value)))
+            element.appendChild(node)
+
+    def _seqtoxml(self, seq, element, dom):
+        for item in seq:
+            if isinstance(item, dict):
+                self._dicttoxml(item, element, dom)
+
     def _toxml(self, dom):
         """
         Return a XML Representation of the object
@@ -209,13 +223,18 @@ class ChargifyBase(object):
             if not property in self.__ignore__:
                 if property in self.__attribute_types__:
                     element.appendChild(value._toxml(dom))
+                elif isinstance(value, list):
+                    node = minidom.Element(property)
+                    node.attributes['type'] = 'array'
+                    element.appendChild(node)
+                    self._seqtoxml(value, node, dom)
                 else:
                     node = minidom.Element(property)
                     node_txt = dom.createTextNode(unicode(value))
                     node.appendChild(node_txt)
                     element.appendChild(node)
         return element
-    
+
     def _get(self, url):
         """
         Handle HTTP GET's to the API
@@ -228,7 +247,7 @@ class ChargifyBase(object):
         r = httplib.HTTPSConnection(self.request_host)
         r.request('GET', url, None, headers)
         response = r.getresponse()
-        
+
         val = None
         try:
             val = response.read()
@@ -237,53 +256,53 @@ class ChargifyBase(object):
         # Unauthorized Error
         if response.status == 401:
             raise ChargifyUnAuthorized(val)
-        
+
         # Forbidden Error
         elif response.status == 403:
             raise ChargifyForbidden(val)
-        
+
         # Not Found Error
         elif response.status == 404:
             raise ChargifyNotFound(val)
-        
+
         # Unprocessable Entity Error
         elif response.status == 422:
             raise ChargifyUnProcessableEntity(val)
-        
+
         # Generic Server Errors
         elif response.status in [405, 500]:
             raise ChargifyServerError(val)
-        
+
         return val
-        
+
     def _post(self, url, data):
         """
         Handle HTTP POST's to the API
         """
         return self._request('POST', url, data)
-    
+
     def _put(self, url, data):
         """
         Handle HTTP PUT's to the API
         """
         return self._request('PUT', url, data)
-    
+
     def _delete(self, url, data):
         """
         Handle HTTP DELETE's to the API
         """
         return self._request('DELETE', url, data)
-    
+
     def _remove_cc_info(self, data):
         return re.sub('<full_number>(\d+)</full_number>', '<full_number>XXXX</full_number>', data)
-        
+
     def _request(self, method, url, data = '' ):
         """
         Handled the request and sends it to the server
         """
         log.log(5, "_request: Sending XML: %s" % (data))
         http = httplib.HTTPSConnection(self.request_host)
-        
+
         http.putrequest(method, url)
         http.putheader("Authorization", "Basic %s" % self._get_auth_string())
         http.putheader("User-Agent", "pychargify")
@@ -302,41 +321,41 @@ class ChargifyBase(object):
             log.log(100, "_request: response status[%s], content[%s]" % (response.status, val))
         except Exception, e:
             log.exception('_request: Unable to read response.')
-        
+
         # Unauthorized Error
         if response.status == 401:
             raise ChargifyUnAuthorized(val)
-        
+
         # Forbidden Error
         elif response.status == 403:
             raise ChargifyForbidden(val)
-        
+
         # Not Found Error
         elif response.status == 404:
             raise ChargifyNotFound(val)
-        
+
         # Unprocessable Entity Error
         elif response.status == 422:
             raise ChargifyUnProcessableEntity(val)
-        
+
         # Generic Server Errors
         elif response.status in [405, 500]:
             raise ChargifyServerError(val)
         return val
-    
+
     def _save(self, url, node_name):
         """
         Save the object using the passed URL as the API end point
         """
         dom = minidom.Document()
         dom.appendChild(self._toxml(dom))
-        
+
         request_made = {
             'day': datetime.datetime.today().day,
             'month': datetime.datetime.today().month,
             'year': datetime.datetime.today().year
         }
-        
+
         if self.id is not None:
             id = str(self.id)
             obj = self._applyS(self._put('/' + url + '/' + id + '.xml', dom.toxml(encoding="utf-8")), self.__name__, node_name)
@@ -353,7 +372,7 @@ class ChargifyBase(object):
                     if (obj.updated_at.day == request_made['day']) and (obj.updated_at.month == request_made['month']) and (obj.updated_at.year == request_made['year']):
                         return (True, obj)
             return (False, obj)
-    
+
     def _get_auth_string(self):
         return base64.encodestring('%s:%s' % (self.api_key, 'x'))[:-1]
 
@@ -397,7 +416,7 @@ class ChargifyTransaction(ChargifyBase):
         'product': 'ChargifyProduct',
     }
     __xmlnodename__ = 'transaction'
-    
+
     id = None
     transaction_type = None
     amount_in_cents = 0
@@ -415,14 +434,14 @@ class ChargifyTransaction(ChargifyBase):
 
     def getById(self, id):
         return self._applyS(self._get('/transactions/' + str(id) + '.xml'), self.__name__, 'transaction')
-        
+
     def getAll(self):
         return self._applyA(self._get('/transactions.xml'), self.__name__, 'transaction')
 
     def getBySubscriptionId(self, subscription_id):
         return self._applyA(self._get('/subscriptions/' + str(subscription_id) + '/transactions.xml'), self.__name__, 'transaction')
-        
-    
+
+
 class ChargifyCustomer(ChargifyBase):
     """
     Represents Chargify Customers
@@ -431,7 +450,7 @@ class ChargifyCustomer(ChargifyBase):
     __name__ = 'ChargifyCustomer'
     __attribute_types__ = {}
     __xmlnodename__ = 'customer'
-    
+
     id = None
     first_name = ''
     last_name = ''
@@ -440,25 +459,25 @@ class ChargifyCustomer(ChargifyBase):
     reference = ''
     created_at = None
     modified_at = None
-    
+
     def __init__(self, apikey, subdomain, nodename = ''):
         super( ChargifyCustomer, self ).__init__(apikey, subdomain)
         if nodename:
             self.__xmlnodename__ = nodename
-        
+
     def getAll(self):
         return self._applyA(self._get('/customers.xml'), self.__name__, 'customer')
-    
+
     def getById(self, id):
         return self._applyS(self._get('/customers/' + str(id) + '.xml'), self.__name__, 'customer')
-    
+
     def getByReference(self, reference):
         return self._applyS(self._get('/customers/lookup' + '.xml?reference=' + urllib.quote(reference)), self.__name__, 'customer')
-    
+
     def getSubscriptions(self):
         obj = ChargifySubscription(self.api_key, self.sub_domain)
         return obj.getByCustomerId(self.id)
-    
+
     def _toxml(self, dom):
         if self.id is not None and self.__xmlnodename__ == 'customer_id':
             node = minidom.Element(self.__xmlnodename__)
@@ -467,10 +486,10 @@ class ChargifyCustomer(ChargifyBase):
             return node
         else:
             return super(ChargifyCustomer, self)._toxml(dom)
-    
+
     def save(self):
         return self._save('customers', 'customer')
-    
+
 
 class ChargifyProduct(ChargifyBase):
     """
@@ -480,7 +499,7 @@ class ChargifyProduct(ChargifyBase):
     __name__ = 'ChargifyProduct'
     __attribute_types__ = {}
     __xmlnodename__ = 'product'
-    
+
     id = None
     price_in_cents = 0
     name = ''
@@ -489,7 +508,7 @@ class ChargifyProduct(ChargifyBase):
     accounting_code = ''
     interval_unit = ''
     interval = 0
-    
+
     def __init__(self, apikey, subdomain, nodename = ''):
         super( ChargifyProduct, self ).__init__(apikey, subdomain)
         if nodename:
@@ -497,22 +516,22 @@ class ChargifyProduct(ChargifyBase):
 
     def getAll(self):
         return self._applyA(self._get('/products.xml'), self.__name__, 'product')
-    
+
     def getById(self, id):
         return self._applyS(self._get('/products/' + str(id) + '.xml'), self.__name__, 'product')
-    
+
     def getByHandle(self, handle):
         return self._applyS(self._get('/products/handle/' + str(handle) + '.xml'), self.__name__, 'product')
-    
+
     def save(self):
         return self._save('products', 'product')
-    
+
     def getPaymentPageUrl(self):
         return 'https://' + self.request_host + '/h/' + self.id + '/subscriptions/new'
-    
+
     def getPriceInDollars(self):
         return round(float(self.price_in_cents) / 100, 2)
-    
+
     def getFormattedPrice(self):
         return "$%.2f" % (self.getPriceInDollars())
 
@@ -529,7 +548,7 @@ class ChargifySubscription(ChargifyBase):
         'credit_card': 'ChargifyCreditCard'
     }
     __xmlnodename__ = 'subscription'
-    
+
     id = None
     state = ''
     balance_in_cents = 0
@@ -547,15 +566,15 @@ class ChargifySubscription(ChargifyBase):
     product_handle = ''
     credit_card = None
     next_billing_at = None
-    
+
     def __init__(self, apikey, subdomain, nodename = ''):
         super( ChargifySubscription, self ).__init__(apikey, subdomain)
         if nodename:
             self.__xmlnodename__ = nodename
-    
+
     def getByCustomerId(self, customer_id):
         return self._applyA(self._get('/customers/' + customer_id + '/subscriptions.xml'), self.__name__, 'subscription')
-    
+
     def getBySubscriptionId(self, subscription_id):
         return self._applyS(self._get('/subscriptions/' + str(subscription_id) + '.xml'), self.__name__, 'subscription')
 
@@ -567,10 +586,10 @@ class ChargifySubscription(ChargifyBase):
 
     def add_coupon(self, code):
         self._post("/subscriptions/"+self.id+"/add_coupon.xml?code="+str(code), "")
-    
+
     def resetBalance(self):
         self._put("/subscriptions/"+self.id+"/reset_balance.xml", "")
-    
+
     def reactivate(self):
         return self._applyS(self._put("/subscriptions/"+self.id+"/reactivate.xml", ""), self.__name__, "subscription")
 
@@ -584,9 +603,9 @@ class ChargifySubscription(ChargifyBase):
             <include_initial_charge>%s</include_initial_charge>
         </migration>""" % (toProductHandle, include_trial, include_initial_charge)
         #end improper indentation
-        
+
         return self._applyS(self._post("/subscriptions/"+self.id+"/migrations.xml", xml), self.__name__, "subscription")
-    
+
     def unsubscribe(self, message=""):
         xml = """<?xml version="1.0" encoding="UTF-8"?>
 <subscription>
@@ -594,8 +613,12 @@ class ChargifySubscription(ChargifyBase):
     %s
   </cancellation_message>
 </subscription>""" % (message)
-        
+
         return self._applyS(self._delete("/subscriptions/"+self.id+".xml", xml), self.__name__, "subscription")
+
+    def change_quantity(self, component_id, allocated_quantity):
+        xml = '<?xml version="1.0" encoding="UTF-8"?><component><allocated_quantity type="integer">%s</allocated_quantity></component>' % allocated_quantity
+        return self._applyS(self._put('/subscriptions/%s/components/%s.xml' % (self.id, component_id), xml), self.__name__, "subscription")
 
 
 class ChargifyCreditCard(ChargifyBase):
@@ -605,7 +628,7 @@ class ChargifyCreditCard(ChargifyBase):
     __name__ = 'ChargifyCreditCard'
     __attribute_types__ = {}
     __xmlnodename__ = 'credit_card_attributes'
-    
+
     first_name = ''
     last_name = ''
     full_number = ''
@@ -619,7 +642,7 @@ class ChargifyCreditCard(ChargifyBase):
     billing_state = ''
     billing_zip = ''
     billing_country = ''
-    
+
     def __init__(self, apikey, subdomain, nodename = ''):
         super( ChargifyCreditCard, self ).__init__(apikey, subdomain)
         if nodename:
@@ -627,7 +650,7 @@ class ChargifyCreditCard(ChargifyBase):
 
     def save(self, subscription):
         path = "/subscriptions/%s.xml" % (subscription.id)
-        
+
         data = u"""<?xml version="1.0" encoding="UTF-8"?>
   <subscription>
     <credit_card_attributes>
@@ -641,7 +664,7 @@ class ChargifyCreditCard(ChargifyBase):
     </credit_card_attributes>
   </subscription>""" % (self.full_number, self.expiration_month, self.expiration_year, self.cvv, self.first_name, self.last_name, self.zip)
         # end improper indentation
-        
+
         return self._applyS(self._put(path, data), self.__name__, "subscription")
 
 
@@ -651,12 +674,12 @@ class ChargifyPostBack(ChargifyBase):
     @license    GNU General Public License
     """
     subscriptions = []
-    
+
     def __init__(self, apikey, subdomain, postback_data):
         ChargifyBase.__init__(apikey, subdomain)
         if postback_data:
             self._process_postback_data(postback_data)
-    
+
     def _process_postback_data(self, data):
         """
         Process the Json array and fetches the Subscription Objects
@@ -673,14 +696,14 @@ class Chargify:
     """
     api_key = ''
     sub_domain = ''
-    
+
     def __init__(self, apikey, subdomain):
         self.api_key = apikey
         self.sub_domain = subdomain
-    
+
     def Customer(self, nodename = ''):
         return ChargifyCustomer(self.api_key, self.sub_domain, nodename)
-    
+
     def Product(self, nodename = ''):
         return ChargifyProduct(self.api_key, self.sub_domain, nodename)
 
@@ -692,7 +715,7 @@ class Chargify:
 
     def Transaction(self, nodename = ''):
         return ChargifyTransaction(self.api_key, self.sub_domain, nodename)
-    
+
     def PostBack(self, postbackdata):
         return ChargifyPostBack(self.api_key, self.sub_domain, postbackdata)
 
