@@ -621,6 +621,13 @@ class Subscription(models.Model, ChargifyBaseModel):
             self.component.allocated_quantity = quantity
             self.component.save()
 
+    def change_component(self, component_id):
+        if self.component:
+            self.api.change_quantity(self.component.component_id, 0)
+            self.api.change_quantity(component_id, self.component.allocated_quantity)
+            self.component.component_id = component_id
+            self.component.save()
+
     def save(self, save_api = False, *args, **kwargs):
         if self.chargify_id is None:
             save_api = True
