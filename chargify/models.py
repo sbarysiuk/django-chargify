@@ -607,21 +607,7 @@ class Subscription(models.Model, ChargifyBaseModel):
         return self.product.handle
     product_handle = property(_product_handle)
 
-    def increment_component(self):
-        if self.component:
-            quantity = self.component.allocated_quantity + 1
-            self.api.change_quantity(self.component.component_id, quantity)
-            self.component.allocated_quantity = quantity
-            self.component.save()
-
-    def decrement_component(self):
-        if self.component:
-            quantity = self.component.allocated_quantity - 1
-            self.api.change_quantity(self.component.component_id, quantity)
-            self.component.allocated_quantity = quantity
-            self.component.save()
-
-    def change_component(self, component_id, allocated_quantity=0):
+    def change_component(self, component_id, allocated_quantity):
         reset_component = True
         if not self.component:
             self.component = QuantityComponent.objects.create(component_id=component_id, allocated_quantity=allocated_quantity)
@@ -631,10 +617,11 @@ class Subscription(models.Model, ChargifyBaseModel):
         if reset_component:
             self.api.change_quantity(self.component.component_id, 0)
 
-        self.api.change_quantity(component_id, self.component.allocated_quantity)
+        self.api.change_quantity(component_id, allocated_quantity)
 
         if reset_component:
             self.component.component_id = component_id
+            self.allocated_quantity = allocated_quantity
             self.component.save()
 
     def save(self, save_api = False, *args, **kwargs):
