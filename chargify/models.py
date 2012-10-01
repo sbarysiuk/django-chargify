@@ -621,10 +621,19 @@ class Subscription(models.Model, ChargifyBaseModel):
             self.component.allocated_quantity = quantity
             self.component.save()
 
-    def change_component(self, component_id):
-        if self.component:
+    def change_component(self, component_id, allocated_quantity=0):
+        reset_component = True
+        if not self.component:
+            self.component = QuantityComponent.objects.create(component_id=component_id, allocated_quantity=allocated_quantity)
+            super(Subscription, self).save()
+            reset_component = False
+
+        if reset_component:
             self.api.change_quantity(self.component.component_id, 0)
-            self.api.change_quantity(component_id, self.component.allocated_quantity)
+
+        self.api.change_quantity(component_id, self.component.allocated_quantity)
+
+        if reset_component:
             self.component.component_id = component_id
             self.component.save()
 
