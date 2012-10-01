@@ -608,20 +608,22 @@ class Subscription(models.Model, ChargifyBaseModel):
     product_handle = property(_product_handle)
 
     def change_component(self, component_id, allocated_quantity):
-        reset_component = True
         if not self.component:
             self.component = QuantityComponent.objects.create(component_id=component_id, allocated_quantity=allocated_quantity)
             super(Subscription, self).save()
-            reset_component = False
 
+        reset_component = (self.component.component_id != component_id)
         if reset_component:
-            self.api.change_quantity(self.component.component_id, 0)
+            # reset old component quantity
+            if self.component.component_id:
+                self.api.change_quantity(self.component.component_id, 0)
+            else:
+                log.error('Check correctness of subscription\'s components values. subscription=%s' % self.chargify_id)
 
         self.api.change_quantity(component_id, allocated_quantity)
-
         if reset_component:
             self.component.component_id = component_id
-            self.allocated_quantity = allocated_quantity
+            self.component.allocated_quantity = allocated_quantity
             self.component.save()
 
     def save(self, save_api = False, *args, **kwargs):
