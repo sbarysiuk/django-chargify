@@ -555,6 +555,7 @@ class Subscription(models.Model, ChargifyBaseModel):
     CANCELLED = 'canceled'
     EXPIRED = 'expired'
     UNPAID = 'unpaid'
+    TRIAL_ENDED = 'trial_ended'
     STATE_CHOICES = (
          (TRIALING, u'Trialing'),
          (ASSESSING, u'Assessing'),
@@ -565,6 +566,7 @@ class Subscription(models.Model, ChargifyBaseModel):
          (CANCELLED, u'Cancelled'),
          (EXPIRED, u'Expired'),
          (UNPAID, u'Unpaid'),
+         (TRIAL_ENDED, u'Trial Ended')
          )
     chargify_id = models.IntegerField(null=True, blank=True, unique=True)
     state = models.CharField(max_length=15, null=True, blank=True, default='', choices=STATE_CHOICES)
@@ -664,8 +666,8 @@ class Subscription(models.Model, ChargifyBaseModel):
         self.chargify_id = int(api.id)
         self.state = api.state
         self.balance_in_cents = api.balance_in_cents
-        self.current_period_started_at = new_datetime(api.current_period_started_at)
-        self.current_period_ends_at = new_datetime(api.current_period_ends_at)
+        self.current_period_started_at = new_datetime(api.current_period_started_at) if api.current_period_started_at else None
+        self.current_period_ends_at = new_datetime(api.current_period_ends_at) if api.current_period_ends_at else None
         if api.trial_started_at:
             self.trial_started_at = new_datetime(api.trial_started_at)
         else:
