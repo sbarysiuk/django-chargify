@@ -649,6 +649,9 @@ class Subscription(models.Model, ChargifyBaseModel):
             saved, subscription = self.save_subscription(api, **kwargs)
             if saved:
                 return self.load(subscription, commit=True) # object save happens after load
+
+        # remove component from kwargs if any just to make super call
+        kwargs.pop('component', None)
         return super(Subscription, self).save(*args, **kwargs)
 
     def save_subscription(self, api, component=None, allocated_quantity=0):
