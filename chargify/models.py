@@ -439,13 +439,13 @@ class CouponManager(ChargifyBaseManager):
         return self.gateway.Coupon()
     api = property(_api)
 
-    def find(self, code):
+    def find(self, code, family_id=None):
         """ Finds and loads a Coupon """
         try:
             return self.filter(code=code)[0]
         except IndexError:
             return self.model().load(
-                self.api.find(code))
+                self.api.find(code, family_id))
 
 
 class Coupon(models.Model, ChargifyBaseModel):

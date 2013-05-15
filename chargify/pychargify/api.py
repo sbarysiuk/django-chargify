@@ -397,8 +397,11 @@ class ChargifyCoupon(ChargifyBase):
     def getById(self, id):
         return self._applyS(self._get('/coupons/' + str(id) + '.xml'), self.__name__, 'coupon')
 
-    def find(self, code):
-        return self._applyS(self._get('/coupons/find.xml?code=' + str(code)), self.__name__, 'coupon')
+    def find(self, code, family_id=None):
+        url = '/coupons/find.xml?code=' + str(code)
+        if family_id:
+            url = '%s&product_family_id=%s' % (url, family_id)
+        return self._applyS(self._get(url), self.__name__, 'coupon')
 
     def save(self):
         return self._save('coupons', 'coupon')
