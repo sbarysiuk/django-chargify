@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.datetime_safe import new_datetime
-from pychargify.api import ChargifyNotFound
+from pychargify.api import ChargifyNotFound, ChargifyUnProcessableEntity
 import logging
 import time
 import traceback
@@ -737,8 +737,13 @@ class Subscription(models.Model, ChargifyBaseModel):
         return instance
 
     def add_coupon(self, coupon):
-        self.api.add_coupon(coupon.code)
-        self.coupons.add(coupon)
+        try:
+            self.api.add_coupon(coupon.code)
+            self.coupons.add(coupon)
+        except ChargifyUnProcessableEntity, e:
+            if u'A coupon is already associated with this subscription.' in e.errors:
+                self.coupons.add(coupon)
+
 
     def unsubscribe(self, message=""):
         """ Cancels the subscription. """
@@ -851,4 +856,3 @@ class Transaction(models.Model, ChargifyBaseModel):
         instance.subscription = self.subscription.api
         return instance
     api = property(_api)
-
