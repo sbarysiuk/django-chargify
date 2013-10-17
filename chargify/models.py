@@ -744,6 +744,13 @@ class Subscription(models.Model, ChargifyBaseModel):
             if u'A coupon is already associated with this subscription.' in e.errors:
                 self.coupons.add(coupon)
 
+    def remove_coupon(self, coupon):
+        try:
+            self.api.remove_coupon(coupon.code)
+            self.coupons.remove(coupon)
+        except ChargifyUnProcessableEntity, e:
+            if u'There\'s no coupon applied to this subscription' in e.errors:
+                self.coupons.remove(coupon)
 
     def unsubscribe(self, message=""):
         """ Cancels the subscription. """

@@ -590,6 +590,9 @@ class ChargifySubscription(ChargifyBase):
     def add_coupon(self, code):
         self._post("/subscriptions/"+self.id+"/add_coupon.xml?code="+str(code), "")
 
+    def remove_coupon(self, code):
+        self._delete("/subscriptions/"+self.id+"/remove_coupon.xml?code="+str(code), "")
+
     def resetBalance(self):
         self._put("/subscriptions/"+self.id+"/reset_balance.xml", "")
 
