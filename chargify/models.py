@@ -104,6 +104,7 @@ class Customer(models.Model, ChargifyBaseModel):
     _first_name = models.CharField(max_length = 50, null=True, blank=False)
     _last_name = models.CharField(max_length = 50, null = True, blank=False)
     _email = models.EmailField(null=True, blank=False)
+    _phone = models.CharField(max_length=100, null=True, blank=False)
     _reference = models.CharField(max_length = 50, null=True, blank=True)
     organization = models.CharField(max_length = 75, null=True, blank=True)
     active = models.BooleanField(default=True)
@@ -149,6 +150,14 @@ class Customer(models.Model, ChargifyBaseModel):
         if self.user.email != email:
             self._email = email
     email = property(_get_email, _set_email)
+
+    def _get_phone(self):
+        if self._phone is not None:
+            return self._phone
+        return self.user.get_profile().phone
+    def _set_phone(self, phone):
+        self._phone = phone
+    phone = property(_get_phone, _set_phone)
 
     def _get_reference(self):
         """ You must save the customer before you can get the reference number"""
@@ -233,6 +242,7 @@ class Customer(models.Model, ChargifyBaseModel):
         customer.first_name = self.first_name
         customer.last_name = self.last_name
         customer.email = self.email
+        customer.phone = self.phone
         customer.organization = self.organization
         customer.reference = self.reference
         return customer

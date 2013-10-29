@@ -458,6 +458,7 @@ class ChargifyCustomer(ChargifyBase):
     first_name = ''
     last_name = ''
     email = ''
+    phone = ''
     organization = ''
     reference = ''
     created_at = None
