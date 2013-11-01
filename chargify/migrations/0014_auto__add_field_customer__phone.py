@@ -9,7 +9,7 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         
         # Adding field 'Customer._phone'
-        db.add_column('chargify_customer', '_phone', self.gf('django.db.models.fields.CharField')(max_length=100, null=True), keep_default=False)
+        db.add_column('chargify_customer', '_phone', self.gf('django.db.models.fields.CharField')(max_length=150, null=True), keep_default=False)
 
 
     def backwards(self, orm):
