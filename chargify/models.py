@@ -104,7 +104,7 @@ class Customer(models.Model, ChargifyBaseModel):
     _first_name = models.CharField(max_length = 50, null=True, blank=False)
     _last_name = models.CharField(max_length = 50, null = True, blank=False)
     _email = models.EmailField(null=True, blank=False)
-    _phone = models.CharField(max_length=100, null=True, blank=False)
+    _phone = models.CharField(max_length=150, null=True, blank=False)
     _reference = models.CharField(max_length = 50, null=True, blank=True)
     organization = models.CharField(max_length = 75, null=True, blank=True)
     active = models.BooleanField(default=True)
